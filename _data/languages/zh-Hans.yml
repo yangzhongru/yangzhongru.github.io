@@ -48,9 +48,9 @@ page:
   totally: 共有
   tags: 标签
 
-# footer:
-#   powered: ""
-#   theme: 
+footer:
+  powered: "→_→"
+  theme: "你瞅啥？"
 
 counter:
   tag_cloud:
