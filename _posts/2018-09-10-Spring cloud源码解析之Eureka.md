@@ -71,7 +71,7 @@ public class AutoServiceRegistrationAutoConfiguration {
 
 我们会发现，`CloudEurekaClient`只有在缓存刷新的时候会用到，真正处理注册、续约等功能代码在Netflix包中的`DiscoveryClient`类中，Spring自己定义了一个叫`org.springframework.cloud.client.discovery.DiscoveryClient`的接口(下文无特殊说明，DiscoveryClient均指的Netflix中的类)，用来统一规定服务发现的方法，这个接口的实现类`EurekaDiscoveryClient`持有了Netflix包中的`DiscoveryClient`对象，Spring通过这种方式实现了服务的注册发现功能。  
 
-## 服务注册
+### 服务注册
 下面我们继续看源码，`CloudEurekaClient`类的构造方法调用了`DiscoveryClient`的构造方法，在进行了一系列参数封装、校验后，执行了`initScheduledTasks()`方法，这个方法有两个if判断语句，分别是：  
 1. 是否要获取服务注册信息；
 2. 是否要注册到Eureka。  
@@ -312,7 +312,7 @@ public class AutoServiceRegistrationAutoConfiguration {
 ```
 在这段代码中，`EUREKA_PACKAGES`是字符串数组，包括`com.netflix.discovery`和`com.netflix.eureka`两个包路径，通过断点查看加载结果，可以发现Eureka服务端的所有REST请求都在`com.netflix.eureka.resources`包中。
 
-## <span id="serviceRegist">注册服务</span>
+### <span id="serviceRegist">注册服务</span>
 接受服务注册的接口就在`com.netflix.eureka.resources`这个包下的`ApplicationResource`中：
 ```java
     @POST
