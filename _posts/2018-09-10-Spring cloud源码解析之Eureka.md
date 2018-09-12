@@ -1,8 +1,8 @@
 ---
 title: Eureka源码解析
 description: 本文基于Spring cloud的Edgware.SR3版本，主要介绍了Eureka客户端和服务端的运行机制，如服务注册、发现、续约等内容。
-categories: SpringCloud, Eureka
-tags: SpringCloud, Eureka
+categories: SpringCloud Eureka
+tags: SpringCloud Eureka
 ---
 
 ## Region和Zone
