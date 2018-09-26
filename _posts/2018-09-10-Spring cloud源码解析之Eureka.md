@@ -329,8 +329,6 @@ public class AutoServiceRegistrationAutoConfiguration {
 
 服务续约与服务获取功能服务端处理逻辑较少，此处跳过。
 
-## 如何保障AP
-
 ## 总结
 总体看，一套Eureka集群属于一个Region，不同的机房可以设置不同的Zone，服务通过多机房部署可以实现灾备，当然正常情况下可以优先调用相同Zone下的服务，避免网络消耗。  
 Eureka的注册中心、服务提供者、服务消费者都被视为一个服务，通过HTTP请求完成注册、续约、获取等功能，所以Eureka注册中心的多个节点可以相互注册组建集群，实现高可用配置。   
