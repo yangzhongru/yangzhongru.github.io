@@ -1,5 +1,5 @@
 ---
-title: Ribbon源码解析（未完成）
+title: Ribbon源码解析
 description: 本文基于Spring cloud的Edgware.SR3版本，主要介绍了Ribbon的主要功能，生产配置及实现机制。
 categories: SpringCloud Ribbon
 tags: SpringCloud Ribbon
@@ -200,7 +200,60 @@ URI reconstructURI(ServiceInstance instance, URI original);
 之所以有个替换url的方法，是因为我们传输进来的URL中，host段填写的是服务名，所以需要查询出要调用哪一个服务，再将其host填写上去。
 
 ### 负载均衡：RibbonLoadBalancerClient
+查看`LoadBalancerClient`引用，我们很容易看到`RibbonAutoConfiguration`中声明的Bean：
+```java
+    @Bean
+	@ConditionalOnMissingBean(LoadBalancerClient.class)
+	public LoadBalancerClient loadBalancerClient() {
+		return new RibbonLoadBalancerClient(springClientFactory());
+	}
+```
 
+衔接上文，我们核心关注`RibbonLoadBalancerClient`的execute方法：
+```java
+	@Override
+	public <T> T execute(String serviceId, LoadBalancerRequest<T> request) throws IOException {
+		ILoadBalancer loadBalancer = getLoadBalancer(serviceId);
+		Server server = getServer(loadBalancer);
+		if (server == null) {
+			throw new IllegalStateException("No instances available for " + serviceId);
+		}
+		RibbonServer ribbonServer = new RibbonServer(serviceId, server, isSecure(server,
+				serviceId), serverIntrospector(serviceId).getMetadata(server));
 
-## Ribbon 的配置优化
+		return execute(serviceId, ribbonServer, request);
+	}
+```
 
+我们逐个查看`getLoadBalancer`、`getServer`、`execute`三个方法，可以看到替换url、选择服务器、执行请求的代码依次都被执行到了，且实际调用的是netflix中的`ZoneAwareLoadBalancer`类。
+
+清楚了整个调用流程后，还有两个小问题需要解决，其一是ribbon如何获取的服务连接信息，其二是ribbon支持了那些负载均衡策略，以及如何实现的。
+
+### Ribbon 如何获取服务信息
+梳理`ZoneAwareLoadBalancer`类可以发现如下继承关系：`ZoneAwareLoadBalancer`继承`DynamicServerListLoadBalancer`继承`BaseLoadBalancer`,其中，`BaseLoadBalancer`主要维护了Server清单、定期检查服务的Ping对象及负载均衡的IRule对象。
+
+`DynamicServerListLoadBalancer`在此基础上，扩展了定期获取Eureka服务信息，将Eureka存储的InstanceInfo信息转换为需要的对象，同时可以过滤服务列表。
+
+`ZoneAwareLoadBalancer`更进一步，它重写了`chooseServer`方法，可以根据Zone来选择服务，防止服务调用跨区域，增加网络耗时。
+
+### 负载均衡策略及实现方式
+前文提到`BaseLoadBalancer`维护了一个IRule对象，通过该类的源码也可以看到，负载均衡器就是通过这个对象来实现的。
+```java
+	public String choose(Object key) {
+        if (rule == null) {
+            return null;
+        } else {
+            try {
+                Server svr = rule.choose(key);
+                return ((svr == null) ? null : svr.getId());
+            } catch (Exception e) {
+                logger.warn("LoadBalancer [{}]:  Error choosing server", name, e);
+                return null;
+            }
+        }
+    }
+```
+
+Ribbon提供的策略有很多种，比如随机选择、轮询、轮询失败后重试、权重等算法，以及通过扩展`ClientConfigEnabledRoundRobinRule`类实现的算法。
+
+`ClientConfigEnabledRoundRobinRule`类的逻辑就是轮询，它是专门为拓展而生的，比如空闲服务优先、按区域轮询等策略都是拓展这个类实现的。
