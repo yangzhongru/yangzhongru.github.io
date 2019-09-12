@@ -21,9 +21,16 @@
     margin-left: 10px;
   }
 
+  .header-font {
+      font-size: 50px;
+  }
+
+  .not_brand {
+    text-decoration: none;
+  }
+
   .brand {
     padding: 2px 1px;
-    background: none;
 
     @include mobile() { display: block; }
   }
